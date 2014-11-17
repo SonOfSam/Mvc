@@ -545,7 +545,7 @@ namespace Microsoft.AspNet.Mvc.Razor
         /// content to the <see cref="HttpResponse.Body"/>.
         /// </summary>
         /// <returns>A <see cref="Task"/> that represents the asynchronous flush operation.</returns>
-        public Task FlushAsync()
+        public HtmlString Flush()
         {
             // If there are active writing scopes then we should throw. Cannot flush content that has the potential to
             // change.
@@ -558,11 +558,12 @@ namespace Microsoft.AspNet.Mvc.Razor
             // Layout.
             if (!IsLayoutBeingRendered && !string.IsNullOrEmpty(Layout))
             {
-                var message = Resources.FormatLayoutCannotBeRendered(nameof(FlushAsync));
+                var message = Resources.FormatLayoutCannotBeRendered(nameof(Flush));
                 throw new InvalidOperationException(message);
             }
 
-            return Output.FlushAsync();
+            Output.Flush();
+            return HtmlString.Empty;
         }
 
         /// <inheritdoc />

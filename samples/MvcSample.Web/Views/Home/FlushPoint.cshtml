@@ -11,6 +11,11 @@
     <p><a href="http://asp.net" class="btn btn-primary btn-lg">Learn more &raquo;</a></p>
 </div>
 
+
+@{
+    Flush();
+    await Task.Delay(TimeSpan.FromSeconds(3));
+}
 <div class="row">
     <div class="col-md-4">
         <h2>Getting started</h2>
@@ -46,8 +51,8 @@
 </address>
 
 @{
-    await FlushAsync();
-    await Task.Delay(TimeSpan.FromSeconds(1));
+    Flush();
+    await Task.Delay(TimeSpan.FromSeconds(4));
 }
 <div class="row">
     <div class="col-md-6">

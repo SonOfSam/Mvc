@@ -33,7 +33,7 @@ namespace Microsoft.AspNet.Mvc.Razor
                          IRazorPageActivator pageActivator,
                          IViewStartProvider viewStartProvider,
                          IRazorPage razorPage,
-                         bool isPartial 
+                         bool isPartial
             )
         {
             _pageFactory = pageFactory;
@@ -210,6 +210,11 @@ namespace Microsoft.AspNet.Mvc.Razor
             {
                 // Only copy buffered content to the Output if we're currently buffering.
                 await bodyWriter.CopyToAsync(context.Writer);
+            }
+            else
+            {
+                // If we're not buffering, wait for the Flush to finish executing.
+                await ((TextWriter)bodyWriter).FlushAsync();
             }
         }
     }

@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Mvc.Rendering;
 
@@ -21,6 +22,9 @@ namespace Microsoft.AspNet.Mvc.Razor
     /// </remarks>
     public class RazorTextWriter : TextWriter, IBufferedTextWriter
     {
+        private readonly FlushPointManager _flushPointManager;
+        private StringCollectionTextWriter _bufferedWriter;
+
         /// <summary>
         /// Creates a new instance of <see cref="RazorTextWriter"/>.
         /// </summary>
@@ -30,30 +34,29 @@ namespace Microsoft.AspNet.Mvc.Razor
         public RazorTextWriter(TextWriter unbufferedWriter, Encoding encoding)
         {
             UnbufferedWriter = unbufferedWriter;
-            BufferedWriter = new StringCollectionTextWriter(encoding);
-            TargetWriter = BufferedWriter;
+            Encoding = encoding;
+            _flushPointManager = new FlushPointManager(unbufferedWriter);
+            _bufferedWriter = new StringCollectionTextWriter(encoding);
         }
 
         /// <inheritdoc />
-        public override Encoding Encoding
-        {
-            get { return BufferedWriter.Encoding; }
-        }
+        public override Encoding Encoding { get; }
 
         /// <inheritdoc />
         public bool IsBuffering { get; private set; } = true;
 
         // Internal for unit testing
-        internal StringCollectionTextWriter BufferedWriter { get; }
+        internal StringCollectionTextWriter BufferedWriter
+        {
+            get { return _bufferedWriter; }
+        }
 
         private TextWriter UnbufferedWriter { get; }
-
-        private TextWriter TargetWriter { get; set; }
 
         /// <inheritdoc />
         public override void Write(char value)
         {
-            TargetWriter.Write(value);
+            BufferedWriter.Write(value);
         }
 
         /// <inheritdoc />
@@ -62,7 +65,7 @@ namespace Microsoft.AspNet.Mvc.Razor
             var htmlString = value as HtmlString;
             if (htmlString != null)
             {
-                htmlString.WriteTo(TargetWriter);
+                htmlString.WriteTo(BufferedWriter);
                 return;
             }
 
@@ -81,7 +84,7 @@ namespace Microsoft.AspNet.Mvc.Razor
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            TargetWriter.Write(buffer, index, count);
+            BufferedWriter.Write(buffer, index, count);
         }
 
         /// <inheritdoc />
@@ -89,14 +92,14 @@ namespace Microsoft.AspNet.Mvc.Razor
         {
             if (!string.IsNullOrEmpty(value))
             {
-                TargetWriter.Write(value);
+                BufferedWriter.Write(value);
             }
         }
 
         /// <inheritdoc />
         public override Task WriteAsync(char value)
         {
-            return TargetWriter.WriteAsync(value);
+            return BufferedWriter.WriteAsync(value);
         }
 
         /// <inheritdoc />
@@ -111,49 +114,49 @@ namespace Microsoft.AspNet.Mvc.Razor
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            return TargetWriter.WriteAsync(buffer, index, count);
+            return BufferedWriter.WriteAsync(buffer, index, count);
         }
 
         /// <inheritdoc />
         public override Task WriteAsync(string value)
         {
-            return TargetWriter.WriteAsync(value);
+            return BufferedWriter.WriteAsync(value);
         }
 
         /// <inheritdoc />
         public override void WriteLine()
         {
-            TargetWriter.WriteLine();
+            BufferedWriter.WriteLine();
         }
 
         /// <inheritdoc />
         public override void WriteLine(string value)
         {
-            TargetWriter.WriteLine(value);
+            BufferedWriter.WriteLine(value);
         }
 
         /// <inheritdoc />
         public override Task WriteLineAsync(char value)
         {
-            return TargetWriter.WriteLineAsync(value);
+            return BufferedWriter.WriteLineAsync(value);
         }
 
         /// <inheritdoc />
         public override Task WriteLineAsync(char[] value, int start, int offset)
         {
-            return TargetWriter.WriteLineAsync(value, start, offset);
+            return BufferedWriter.WriteLineAsync(value, start, offset);
         }
 
         /// <inheritdoc />
         public override Task WriteLineAsync(string value)
         {
-            return TargetWriter.WriteLineAsync(value);
+            return BufferedWriter.WriteLineAsync(value);
         }
 
         /// <inheritdoc />
         public override Task WriteLineAsync()
         {
-            return TargetWriter.WriteLineAsync();
+            return BufferedWriter.WriteLineAsync();
         }
 
         /// <summary>
@@ -163,14 +166,9 @@ namespace Microsoft.AspNet.Mvc.Razor
         /// </summary>
         public override void Flush()
         {
-            if (IsBuffering)
-            {
-                IsBuffering = false;
-                TargetWriter = UnbufferedWriter;
-                CopyTo(UnbufferedWriter);
-            }
-
-            UnbufferedWriter.Flush();
+            IsBuffering = false;
+            var oldWriter = Interlocked.Exchange(ref _bufferedWriter, new StringCollectionTextWriter(Encoding));
+            _flushPointManager.QueueForFlush(oldWriter);
         }
 
         /// <summary>
@@ -179,42 +177,65 @@ namespace Microsoft.AspNet.Mvc.Razor
         /// to the unbuffered writer.
         /// </summary>
         /// <returns>A <see cref="Task"/> that represents the asynchronous copy and flush operations.</returns>
-        public override async Task FlushAsync()
+        public override Task FlushAsync()
         {
-            if (IsBuffering)
-            {
-                IsBuffering = false;
-                TargetWriter = UnbufferedWriter;
-                await CopyToAsync(UnbufferedWriter);
-            }
-
-            await UnbufferedWriter.FlushAsync();
+            IsBuffering = false;
+            return _flushPointManager.FlushAsync(_bufferedWriter);
         }
 
         /// <inheritdoc />
         public void CopyTo(TextWriter writer)
         {
-            writer = UnWrapRazorTextWriter(writer);
-            BufferedWriter.CopyTo(writer);
+            if (!IsBuffering)
+            {
+                throw new InvalidOperationException();
+            }
+
+            _bufferedWriter.CopyTo(writer);
         }
 
         /// <inheritdoc />
         public Task CopyToAsync(TextWriter writer)
         {
-            writer = UnWrapRazorTextWriter(writer);
-            return BufferedWriter.CopyToAsync(writer);
-        }
-
-        private static TextWriter UnWrapRazorTextWriter(TextWriter writer)
-        {
-            var targetRazorTextWriter = writer as RazorTextWriter;
-            if (targetRazorTextWriter != null)
+            if (!IsBuffering)
             {
-                writer = targetRazorTextWriter.IsBuffering ? targetRazorTextWriter.BufferedWriter :
-                                                             targetRazorTextWriter.UnbufferedWriter;
+                throw new InvalidOperationException();
             }
 
-            return writer;
+            return _bufferedWriter.CopyToAsync(writer);
+        }
+
+        private sealed class FlushPointManager
+        {
+            private readonly object _lock = new object();
+            private readonly TextWriter _targetWriter;
+            private Task _flushTask;
+
+            public FlushPointManager(TextWriter targetWriter)
+            {
+                _targetWriter = targetWriter;
+            }
+
+            public Task QueueForFlush(StringCollectionTextWriter writer)
+            {
+                lock (_lock)
+                {
+                    _flushTask = FlushAsync(writer);
+                    return _flushTask;
+                }
+            }
+
+            public async Task FlushAsync(StringCollectionTextWriter writer)
+            {
+                var previousFlushTask = _flushTask;
+                if (previousFlushTask != null)
+                {
+                    await previousFlushTask;
+                }
+
+                await writer.CopyToAsync(_targetWriter);
+                await _targetWriter.FlushAsync();
+            }
         }
     }
 }

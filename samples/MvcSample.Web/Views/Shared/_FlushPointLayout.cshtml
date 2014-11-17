@@ -24,7 +24,7 @@
         </div>
     </div>
     <div class="container body-content">
-        @{ await FlushAsync(); }
+        @Flush()
         @RenderBody()
         @RenderSection("content")
         <hr />
