@@ -277,11 +277,12 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
         }
 
         [Fact]
-        public void Merge_CombinesAllTagHelperOutputAndTagBuilderProperties()
+        public void Merge_CombinesAllTagBuilderProperties_ExceptTagName()
         {
             // Arrange
+            var expectedTagName = "not-div";
             var tagHelperOutput = new TagHelperOutput(
-                "p",
+                expectedTagName,
                 attributes: new Dictionary<string, string>(),
                 content: "Hello from tagHelperOutput");
             var expectedOutputAttribute = new KeyValuePair<string, string>("class", "btn");
@@ -296,7 +297,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
             tagHelperOutput.Merge(tagBuilder);
 
             // Assert
-            Assert.Equal("div", tagHelperOutput.TagName);
+            Assert.Equal(expectedTagName, tagHelperOutput.TagName);
             Assert.Equal("Hello from tagHelperOutputHello from tagBuilder.", tagHelperOutput.Content);
             Assert.Equal(tagHelperOutput.Attributes.Count, 2);
             var attribute = Assert.Single(tagHelperOutput.Attributes, kvp => kvp.Key.Equals("class"));

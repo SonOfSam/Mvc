@@ -71,7 +71,6 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
         /// this method may not be appropriate for all <see cref="ITagHelper"/> scenarios.</remarks>
         public static void Merge(this TagHelperOutput tagHelperOutput, TagBuilder tagBuilder)
         {
-            tagHelperOutput.TagName = tagBuilder.TagName;
             tagHelperOutput.Content += tagBuilder.InnerHtml;
 
             MergeAttributes(tagHelperOutput, tagBuilder);
