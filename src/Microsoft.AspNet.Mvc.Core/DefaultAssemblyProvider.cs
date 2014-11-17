@@ -15,7 +15,7 @@ namespace Microsoft.AspNet.Mvc
         /// Gets the set of assembly names that are used as root for discovery of 
         /// Mvc controllers, view components and views.
         /// </summary>
-        public virtual HashSet<string> ReferenceAssemblies { get; } = new HashSet<string>(StringComparer.Ordinal)
+        protected virtual HashSet<string> ReferenceAssemblies { get; } = new HashSet<string>(StringComparer.Ordinal)
         {
             "Microsoft.AspNet.Mvc",
             "Microsoft.AspNet.Mvc.Core",
@@ -32,7 +32,7 @@ namespace Microsoft.AspNet.Mvc
             _libraryManager = libraryManager;
         }
 
-        public IEnumerable<Assembly> CandidateAssemblies
+        public virtual IEnumerable<Assembly> CandidateAssemblies
         {
             get
             {

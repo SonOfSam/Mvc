@@ -90,39 +90,39 @@ namespace Microsoft.AspNet.Mvc.Core
             info.SetupGet(b => b.Name).Returns(name);
             return info.Object;
         }
-    }
 
-    class TestAssemblyProvider : DefaultAssemblyProvider
-    {
-        public override HashSet<string> ReferenceAssemblies
+        private class TestAssemblyProvider : DefaultAssemblyProvider
         {
-            get
+            protected override HashSet<string> ReferenceAssemblies
             {
-                return new HashSet<string>
+                get
+                {
+                    return new HashSet<string>
                 {
                     "MyAssembly",
                     "AnotherAssembly"
                 };
+                }
             }
-        }
 
-        public TestAssemblyProvider(ILibraryManager libraryManager) : base(libraryManager) 
-        {
-        }
-    }
-
-    class NullAssemblyProvider : DefaultAssemblyProvider
-    {
-        public override HashSet<string> ReferenceAssemblies
-        {
-            get
+            public TestAssemblyProvider(ILibraryManager libraryManager) : base(libraryManager)
             {
-                return null;
             }
         }
 
-        public NullAssemblyProvider(ILibraryManager libraryManager) : base(libraryManager) 
+        private class NullAssemblyProvider : DefaultAssemblyProvider
         {
+            protected override HashSet<string> ReferenceAssemblies
+            {
+                get
+                {
+                    return null;
+                }
+            }
+
+            public NullAssemblyProvider(ILibraryManager libraryManager) : base(libraryManager)
+            {
+            }
         }
     }
 }
