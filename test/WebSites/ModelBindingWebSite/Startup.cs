@@ -24,6 +24,8 @@ namespace ModelBindingWebSite
                             m.MaxModelValidationErrors = 8;
                             m.ModelBinders.Insert(0, typeof(TestMetadataAwareBinder));
                         });
+
+                services.AddInstance<ICalculator>(new DefaultCalculator());
             });
 
             // Add MVC to the request pipeline

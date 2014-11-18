@@ -76,6 +76,35 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
         }
 
         [Fact]
+        public async Task Calculate_WithAnArgumentFromService()
+        {
+            // Arrange
+            var server = TestServer.Create(_services, _app);
+            var client = server.CreateClient();
+
+            // Act
+            var response = await client.GetAsync("http://localhost/Calculator/Add?left=1234&right=1");
+
+            //Assert
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("1235", await response.Content.ReadAsStringAsync());
+        }
+
+        [Fact]
+        public async Task Calculate_WithAnModelPropertyFromService()
+        {
+            var server = TestServer.Create(_services, _app);
+            var client = server.CreateClient();
+
+            // Act
+            var response = await client.GetAsync("http://localhost/Calculator/Calculate?Left=10&Right=5&Operator=*");
+
+            //Assert
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("50", await response.Content.ReadAsStringAsync());
+        }
+
+        [Fact]
         public async Task MultipleParametersMarkedWithFromBody_Throws()
         {
             // Arrange
