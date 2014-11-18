@@ -326,10 +326,10 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
             var day = Assert.Single(description.ParameterDescriptions, p => p.Name == "day");
             Assert.False(day.IsOptional);
             Assert.Equal("Path", day.Source);
-            Assert.Equal("IntRouteConstraint", day.ConstraintType);
+            Assert.Equal("OptionalRouteConstraint", day.ConstraintType);
 
             var year = Assert.Single(description.ParameterDescriptions, p => p.Name == "year");
-            Assert.True(year.IsOptional);
+            Assert.False(year.IsOptional);
             Assert.Equal("Path", year.Source);
             Assert.Equal("IntRouteConstraint", year.ConstraintType);
         }

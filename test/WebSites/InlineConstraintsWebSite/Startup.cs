@@ -51,6 +51,14 @@ namespace InlineConstraints
                             {
                                 routes.MapRoute(item.RouteName, item.RouteTemplateValue);
                             }
+
+                            routes.MapRoute("StoreId",
+                                "{controller}/{action}/{id:guid?}", 
+                                defaults: new {controller = "Store" });
+
+                            routes.MapRoute("StoreLocation",
+                                "{controller}/{action}/{location:minlength(3):maxlength(10)}",
+                                defaults: new { controller = "Store" });
                         });
         }
 
