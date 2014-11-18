@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using Microsoft.AspNet.Routing.Template;
 
 namespace Microsoft.AspNet.Mvc.Routing
@@ -24,7 +23,7 @@ namespace Microsoft.AspNet.Mvc.Routing
                 var segment = template.Segments[i];
 
                 var digit = ComputeDigit(segment);
-                Contract.Assert(digit >= 0 && digit < 10);
+                Debug.Assert(digit >= 0 && digit < 10);
 
                 precedence += Decimal.Divide(digit, (decimal)Math.Pow(10, i));
             }
