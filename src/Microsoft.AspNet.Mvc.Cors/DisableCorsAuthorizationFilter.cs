@@ -5,7 +5,6 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Cors.Core;
 using Microsoft.AspNet.Http;
-using Microsoft.AspNet.Mvc.ActionResults;
 using Microsoft.AspNet.Mvc.Filters;
 using Microsoft.Framework.Internal;
 using Microsoft.Framework.Primitives;
@@ -22,7 +21,7 @@ namespace Microsoft.AspNet.Mvc.Cors
         {
             get
             {
-                return DefaultOrder.DefaultCorsSortOrder;
+                return int.MaxValue - 100;
             }
         }
 

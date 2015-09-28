@@ -33,24 +33,35 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             Assert.Equal(ModelBindingResult.NoResult, result);
         }
 
+        public static TheoryData<Type> ConvertableTypeData
+        {
+            get
+            {
+                var data = new TheoryData<Type>
+                {
+                    typeof(byte),
+                    typeof(short),
+                    typeof(int),
+                    typeof(long),
+                    typeof(Guid),
+                    typeof(double),
+                    typeof(DayOfWeek),
+                };
+
+                // DateTimeOffset doesn't have a TypeConverter in Mono.
+                if (!TestPlatformHelper.IsMono)
+                {
+                    data.Add(typeof(DateTimeOffset));
+                }
+
+                return data;
+            }
+        }
+
         [Theory]
-        [InlineData(typeof(byte))]
-        [InlineData(typeof(short))]
-        [InlineData(typeof(int))]
-        [InlineData(typeof(long))]
-        [InlineData(typeof(Guid))]
-        [InlineData(typeof(DateTimeOffset))]
-        [InlineData(typeof(double))]
-        [InlineData(typeof(DayOfWeek))]
+        [MemberData(nameof(ConvertableTypeData))]
         public async Task BindModel_ReturnsFailure_IfTypeCanBeConverted_AndConversionFails(Type destinationType)
         {
-            if (TestPlatformHelper.IsMono &&
-                destinationType == typeof(DateTimeOffset))
-            {
-                // DateTimeOffset doesn't have a TypeConverter in Mono
-                return;
-            }
-
             // Arrange
             var bindingContext = GetBindingContext(destinationType);
             bindingContext.ValueProvider = new SimpleValueProvider
@@ -92,7 +103,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             // Assert
             Assert.False(result.IsModelSet);
             Assert.Null(result.Model);
-            Assert.Null(result.ValidationNode);
 
             var error = Assert.Single(bindingContext.ModelState["theModelName"].Errors);
             Assert.Equal(error.ErrorMessage, "The value '' is invalid.", StringComparer.Ordinal);
@@ -116,7 +126,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var result = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.NotNull(result);
+            Assert.NotEqual(ModelBindingResult.NoResult, result);
             Assert.Null(result.Model);
             Assert.False(bindingContext.ModelState.IsValid);
             var error = Assert.Single(bindingContext.ModelState["theModelName"].Errors);

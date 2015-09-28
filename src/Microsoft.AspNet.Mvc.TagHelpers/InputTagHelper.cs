@@ -7,7 +7,8 @@ using System.Linq;
 using Microsoft.AspNet.Http;
 using Microsoft.AspNet.Mvc.ModelBinding;
 using Microsoft.AspNet.Mvc.Rendering;
-using Microsoft.AspNet.Mvc.Rendering.Internal;
+using Microsoft.AspNet.Mvc.ViewFeatures;
+using Microsoft.AspNet.Mvc.ViewFeatures.Internal;
 using Microsoft.AspNet.Razor.Runtime.TagHelpers;
 
 namespace Microsoft.AspNet.Mvc.TagHelpers
@@ -15,7 +16,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
     /// <summary>
     /// <see cref="ITagHelper"/> implementation targeting &lt;input&gt; elements with an <c>asp-for</c> attribute.
     /// </summary>
-    [TargetElement("input", Attributes = ForAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("input", Attributes = ForAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     public class InputTagHelper : TagHelper
     {
         private const string ForAttributeName = "asp-for";
@@ -76,7 +77,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
         {
             get
             {
-                return DefaultOrder.DefaultFrameworkSortOrder;
+                return -1000;
             }
         }
 

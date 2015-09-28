@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Framework.Internal;
 
@@ -32,7 +31,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         /// <returns>A <see cref="ModelBindingResult"/> representing a failed model binding operation.</returns>
         public static ModelBindingResult Failed([NotNull] string key)
         {
-            return new ModelBindingResult(key, model: null, isModelSet: false, validationNode: null);
+            return new ModelBindingResult(key, model: null, isModelSet: false);
         }
 
         /// <summary>
@@ -50,14 +49,12 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         /// </summary>
         /// <param name="key">The key of the current model binding operation.</param>
         /// <param name="model">The model value. May be <c>null.</c></param>
-        /// <param name="validationNode">The <see cref="ModelValidationNode"/>. May be <c>null</c>.</param>
         /// <returns>A <see cref="ModelBindingResult"/> representing a successful model bind.</returns>
         public static ModelBindingResult Success(
             [NotNull] string key,
-            object model,
-            ModelValidationNode validationNode)
+            object model)
         {
-            return new ModelBindingResult(key, model, isModelSet: true, validationNode: validationNode);
+            return new ModelBindingResult(key, model, isModelSet: true);
         }
 
         /// <summary>
@@ -66,36 +63,19 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         /// </summary>
         /// <param name="key">The key of the current model binding operation.</param>
         /// <param name="model">The model value. May be <c>null.</c></param>
-        /// <param name="validationNode">The <see cref="ModelValidationNode"/>. May be <c>null</c>.</param>
         /// <returns>A completed <see cref="Task{ModelBindingResult}"/> representing a successful model bind.</returns>
         public static Task<ModelBindingResult> SuccessAsync(
             [NotNull] string key,
-            object model,
-            ModelValidationNode validationNode)
+            object model)
         {
-            return Task.FromResult(Success(key, model, validationNode));
+            return Task.FromResult(Success(key, model));
         }
 
-        /// <summary>
-        /// Creates a new <see cref="ModelBindingResult"/> using the provided <paramref name="key"/>.
-        /// </summary>
-        /// <param name="key">The key of the current model binding operation.</param>
-        /// <param name="other">The other <see cref="ModelBindingResult" /> to copy from.</param>
-        public ModelBindingResult([NotNull] string key, ModelBindingResult other)
-        {
-            Key = key;
-
-            Model = other.Model;
-            IsModelSet = other.IsModelSet;
-            ValidationNode = other.ValidationNode;
-        }
-
-        private ModelBindingResult(string key, object model, bool isModelSet, ModelValidationNode validationNode)
+        private ModelBindingResult(string key, object model, bool isModelSet)
         {
             Key = key;
             Model = model;
             IsModelSet = isModelSet;
-            ValidationNode = validationNode;
         }
 
         /// <summary>
@@ -124,11 +104,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         /// </summary>
         public bool IsModelSet { get; }
 
-        /// <summary>
-        /// A <see cref="ModelValidationNode"/> associated with the current <see cref="ModelBindingResult"/>.
-        /// </summary>
-        public ModelValidationNode ValidationNode { get; }
-
         /// <inheritdoc />
         public override bool Equals(object obj)
         {
@@ -146,11 +121,12 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            var hash = HashCodeCombiner.Start();
-            hash.Add(Key, StringComparer.OrdinalIgnoreCase);
-            hash.Add(IsModelSet);
-            hash.Add(Model);
-            return hash.CombinedHash;
+            var hashCodeCombiner = HashCodeCombiner.Start();
+            hashCodeCombiner.Add(Key, StringComparer.OrdinalIgnoreCase);
+            hashCodeCombiner.Add(IsModelSet);
+            hashCodeCombiner.Add(Model);
+
+            return hashCodeCombiner.CombinedHash;
         }
 
         /// <inheritdoc />
@@ -160,6 +136,23 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 string.Equals(Key, other.Key, StringComparison.OrdinalIgnoreCase) &&
                 IsModelSet == other.IsModelSet &&
                 object.Equals(Model, other.Model);
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            if (Key == null)
+            {
+                return "No Result";
+            }
+            else if (IsModelSet)
+            {
+                return $"Success {Key} -> '{Model}'";
+            }
+            else
+            {
+                return $"Failed {Key}";
+            }
         }
 
         /// <summary>

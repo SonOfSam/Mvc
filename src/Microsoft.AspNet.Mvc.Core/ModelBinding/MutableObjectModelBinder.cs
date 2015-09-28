@@ -21,12 +21,12 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             typeof(MutableObjectModelBinder).GetTypeInfo().GetDeclaredMethod(nameof(CallPropertyAddRange));
 
         /// <inheritdoc />
-        public virtual async Task<ModelBindingResult> BindModelAsync([NotNull] ModelBindingContext bindingContext)
+        public Task<ModelBindingResult> BindModelAsync([NotNull] ModelBindingContext bindingContext)
         {
             ModelBindingHelper.ValidateBindingContext(bindingContext);
             if (!CanBindType(bindingContext.ModelMetadata))
             {
-                return ModelBindingResult.NoResult;
+                return ModelBindingResult.NoResultAsync;
             }
 
             var mutableObjectBinderContext = new MutableObjectBinderContext()
@@ -37,24 +37,26 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
             if (!(CanCreateModel(mutableObjectBinderContext)))
             {
-                return ModelBindingResult.NoResult;
+                return ModelBindingResult.NoResultAsync;
             }
 
+            return BindModelCoreAsync(bindingContext, mutableObjectBinderContext);
+        }
+
+        private async Task<ModelBindingResult> BindModelCoreAsync(
+            ModelBindingContext bindingContext,
+            MutableObjectBinderContext mutableObjectBinderContext)
+        {
             // Create model first (if necessary) to avoid reporting errors about properties when activation fails.
             var model = GetModel(bindingContext);
 
             var results = await BindPropertiesAsync(bindingContext, mutableObjectBinderContext.PropertyMetadata);
 
-            var validationNode = new ModelValidationNode(
-                bindingContext.ModelName,
-                bindingContext.ModelMetadata,
-                model);
-
             // Post-processing e.g. property setters and hooking up validation.
             bindingContext.Model = model;
-            ProcessResults(bindingContext, results, validationNode);
+            ProcessResults(bindingContext, results);
 
-            return ModelBindingResult.Success(bindingContext.ModelName, model, validationNode);
+            return ModelBindingResult.Success(bindingContext.ModelName, model);
         }
 
         /// <summary>
@@ -224,7 +226,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 return false;
             }
 
-            if (modelMetadata.IsCollectionType)
+            if (modelMetadata.IsEnumerableType)
             {
                 return false;
             }
@@ -391,10 +393,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         }
 
         // Internal for testing.
-        internal ModelValidationNode ProcessResults(
+        internal void ProcessResults(
             ModelBindingContext bindingContext,
-            IDictionary<ModelMetadata, ModelBindingResult> results,
-            ModelValidationNode validationNode)
+            IDictionary<ModelMetadata, ModelBindingResult> results)
         {
             var metadataProvider = bindingContext.OperationBindingContext.MetadataProvider;
             var modelExplorer =
@@ -425,20 +426,8 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                     var result = entry.Value;
                     var propertyMetadata = entry.Key;
                     SetProperty(bindingContext, modelExplorer, propertyMetadata, result);
-
-                    var propertyValidationNode = result.ValidationNode;
-                    if (propertyValidationNode == null)
-                    {
-                        // Make sure that irrespective of whether the properties of the model were bound with a value,
-                        // create a validation node so that these get validated.
-                        propertyValidationNode = new ModelValidationNode(result.Key, entry.Key, result.Model);
-                    }
-
-                    validationNode.ChildNodes.Add(propertyValidationNode);
                 }
             }
-
-            return validationNode;
         }
 
         /// <summary>
@@ -515,17 +504,14 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             // Determine T if this is an ICollection<T> property. No need for a T[] case because CanUpdateProperty()
             // ensures property is either settable or not an array. Underlying assumption is that CanUpdateProperty()
             // and SetProperty() are overridden together.
-            var collectionTypeArguments = ClosedGenericMatcher.ExtractGenericInterface(
-                    propertyExplorer.ModelType,
-                    typeof(ICollection<>))
-                ?.GenericTypeArguments;
-            if (collectionTypeArguments == null)
+            if (!propertyExplorer.Metadata.IsCollectionType)
             {
                 // Not a collection model.
                 return;
             }
 
-            var propertyAddRange = CallPropertyAddRangeOpenGenericMethod.MakeGenericMethod(collectionTypeArguments);
+            var propertyAddRange = CallPropertyAddRangeOpenGenericMethod.MakeGenericMethod(
+                propertyExplorer.Metadata.ElementMetadata.ModelType);
             try
             {
                 propertyAddRange.Invoke(obj: null, parameters: new[] { target, source });
@@ -570,30 +556,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             {
                 modelState.AddModelError(modelStateKey, exception);
             }
-        }
-
-        // Returns true if validator execution adds a model error.
-        private static bool RunValidator(
-            IModelValidator validator,
-            ModelBindingContext bindingContext,
-            ModelExplorer propertyExplorer,
-            string modelStateKey)
-        {
-            var validationContext = new ModelValidationContext(bindingContext, propertyExplorer);
-
-            var addedError = false;
-            foreach (var validationResult in validator.Validate(validationContext))
-            {
-                bindingContext.ModelState.TryAddModelError(modelStateKey, validationResult.Message);
-                addedError = true;
-            }
-
-            if (!addedError)
-            {
-                bindingContext.ModelState.MarkFieldValid(modelStateKey);
-            }
-
-            return addedError;
         }
 
         internal sealed class PropertyValidationInfo

@@ -3,10 +3,12 @@
 
 using System;
 using Microsoft.AspNet.Mvc;
+using Microsoft.AspNet.Mvc.Abstractions;
 using Microsoft.AspNet.Mvc.ActionConstraints;
-using Microsoft.AspNet.Mvc.Actions;
 using Microsoft.AspNet.Mvc.ApplicationModels;
+using Microsoft.AspNet.Mvc.Controllers;
 using Microsoft.AspNet.Mvc.Filters;
+using Microsoft.AspNet.Mvc.Infrastructure;
 using Microsoft.AspNet.Mvc.Internal;
 using Microsoft.AspNet.Mvc.ModelBinding;
 using Microsoft.AspNet.Mvc.ModelBinding.Metadata;
@@ -64,7 +66,7 @@ namespace Microsoft.Framework.DependencyInjection
             services.TryAddEnumerable(
                 ServiceDescriptor.Transient<IActionDescriptorProvider, ControllerActionDescriptorProvider>());
             services.TryAddSingleton<IActionDescriptorsCollectionProvider, DefaultActionDescriptorsCollectionProvider>();
-            
+
             //
             // Action Selection
             //
@@ -132,7 +134,6 @@ namespace Microsoft.Framework.DependencyInjection
         {
             services.AddOptions();
             services.AddRouting();
-            services.AddNotifier();
         }
     }
 }

@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Reflection;
 using Microsoft.AspNet.Mvc.ModelBinding.Metadata;
 using Microsoft.Framework.Internal;
@@ -14,6 +15,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
     /// <summary>
     /// A metadata representation of a model type, property or parameter.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public abstract class ModelMetadata
     {
         private bool? _isComplexType;
@@ -132,7 +134,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         /// <see cref="ModelMetadata"/> for <c>T</c> if <see cref="ModelType"/> implements
         /// <see cref="IEnumerable{T}"/>. <see cref="ModelMetadata"/> for <c>object</c> if <see cref="ModelType"/>
         /// implements <see cref="IEnumerable"/> but not <see cref="IEnumerable{T}"/>. <c>null</c> otherwise i.e. when
-        /// <see cref="IsCollectionType"/> is <c>false</c>.
+        /// <see cref="IsEnumerableType"/> is <c>false</c>.
         /// </value>
         public abstract ModelMetadata ElementMetadata { get; }
 
@@ -322,10 +324,28 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         /// Gets a value indicating whether or not <see cref="ModelType"/> is a collection type.
         /// </summary>
         /// <remarks>
-        /// A collection type is defined as a <see cref="Type"/> which is assignable to
-        /// <see cref="IEnumerable"/>, and is not a <see cref="string"/>.
+        /// A collection type is defined as a <see cref="Type"/> which is assignable to <see cref="ICollection{T}"/>.
         /// </remarks>
         public bool IsCollectionType
+        {
+            get
+            {
+                // Ignore non-generic ICollection type. Would require an additional check and that interface is not
+                // used in MVC.
+                var collectionType = ClosedGenericMatcher.ExtractGenericInterface(ModelType, typeof(ICollection<>));
+
+                return collectionType != null;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether or not <see cref="ModelType"/> is an enumerable type.
+        /// </summary>
+        /// <remarks>
+        /// An enumerable type is defined as a <see cref="Type"/> which is assignable to
+        /// <see cref="IEnumerable"/>, and is not a <see cref="string"/>.
+        /// </remarks>
+        public bool IsEnumerableType
         {
             get
             {
@@ -388,6 +408,18 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         public string GetDisplayName()
         {
             return DisplayName ?? PropertyName ?? ModelType.Name;
+        }
+
+        private string DebuggerToString()
+        {
+            if (Identity.MetadataKind == ModelMetadataKind.Type)
+            {
+                return $"ModelMetadata (Type: '{ModelType.Name}')";
+            }
+            else
+            {
+                return $"ModelMetadata (Property: '{ContainerType.Name}.{PropertyName}' Type: '{ModelType.Name}')";
+            }
         }
     }
 }

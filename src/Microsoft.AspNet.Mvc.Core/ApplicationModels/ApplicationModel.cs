@@ -8,7 +8,7 @@ using Microsoft.AspNet.Mvc.Filters;
 namespace Microsoft.AspNet.Mvc.ApplicationModels
 {
     [DebuggerDisplay("ApplicationModel: Controllers: {Controllers.Count}, Filters: {Filters.Count}")]
-    public class ApplicationModel
+    public class ApplicationModel : IPropertyModel, IFilterModel, IApiExplorerModel
     {
         public ApplicationModel()
         {
@@ -37,7 +37,7 @@ namespace Microsoft.AspNet.Mvc.ApplicationModels
 
         /// <summary>
         /// Gets a set of properties associated with all actions.
-        /// These properties will be copied to <see cref="Actions.ActionDescriptor.Properties"/>.
+        /// These properties will be copied to <see cref="Abstractions.ActionDescriptor.Properties"/>.
         /// </summary>
         public IDictionary<object, object> Properties { get; }
     }

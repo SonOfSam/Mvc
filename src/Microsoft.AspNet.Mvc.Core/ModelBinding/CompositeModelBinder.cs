@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Mvc.Core;
+using Microsoft.AspNet.Mvc.ModelBinding.Validation;
 using Microsoft.Framework.Internal;
 
 namespace Microsoft.AspNet.Mvc.ModelBinding
@@ -32,51 +33,16 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         /// <inheritdoc />
         public IReadOnlyList<IModelBinder> ModelBinders { get; }
 
-        public virtual async Task<ModelBindingResult> BindModelAsync([NotNull] ModelBindingContext bindingContext)
+        public virtual Task<ModelBindingResult> BindModelAsync([NotNull] ModelBindingContext bindingContext)
         {
             var newBindingContext = CreateNewBindingContext(bindingContext);
             if (newBindingContext == null)
             {
                 // Unable to find a value provider for this binding source. Binding will fail.
-                return ModelBindingResult.NoResult;
+                return ModelBindingResult.NoResultAsync;
             }
 
-            var modelBindingResult = await RunModelBinders(newBindingContext);
-            if (modelBindingResult == ModelBindingResult.NoResult)
-            {
-                // Unable to bind or something went wrong.
-                return ModelBindingResult.NoResult;
-            }
-
-            var bindingKey = bindingContext.ModelName;
-            if (modelBindingResult.IsModelSet)
-            {
-                // Update the model state key if we are bound using an empty prefix and it is a complex type.
-                // This is needed as validation uses the model state key to log errors. The client validation expects
-                // the errors with property names rather than the full name.
-                if (newBindingContext.ModelMetadata.IsComplexType && string.IsNullOrEmpty(modelBindingResult.Key))
-                {
-                    // For non-complex types, if we fell back to the empty prefix, we should still be using the name
-                    // of the parameter/property. Complex types have their own property names which acts as model
-                    // state keys and do not need special treatment.
-                    // For example :
-                    //
-                    // public class Model
-                    // {
-                    //     public int SimpleType { get; set; }
-                    // }
-                    // public void Action(int id, Model model)
-                    // {
-                    // }
-                    //
-                    // In this case, for the model parameter the key would be SimpleType instead of model.SimpleType.
-                    // (i.e here the prefix for the model key is empty).
-                    // For the id parameter the key would be id.
-                    bindingKey = string.Empty;
-                }
-            }
-
-            return new ModelBindingResult(bindingKey, modelBindingResult);
+            return RunModelBinders(newBindingContext);
         }
 
         private async Task<ModelBindingResult> RunModelBinders(ModelBindingContext bindingContext)
@@ -95,6 +61,19 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                     if (result.IsModelSet ||
                         bindingContext.ModelState.ContainsKey(bindingContext.ModelName))
                     {
+                        if (bindingContext.IsTopLevelObject && result.Model != null)
+                        {
+                            ValidationStateEntry entry;
+                            if (!bindingContext.ValidationState.TryGetValue(result.Model, out entry))
+                            {
+                                entry = new ValidationStateEntry();
+                                bindingContext.ValidationState.Add(result.Model, entry);
+                            }
+
+                            entry.Key = entry.Key ?? result.Key;
+                            entry.Metadata = entry.Metadata ?? bindingContext.ModelMetadata;
+                        }
+
                         return result;
                     }
 
@@ -158,6 +137,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 BindingSource = oldBindingContext.BindingSource,
                 BinderType = oldBindingContext.BinderType,
                 IsTopLevelObject = oldBindingContext.IsTopLevelObject,
+                ValidationState = oldBindingContext.ValidationState,
             };
 
             if (bindingSource != null && bindingSource.IsGreedy)

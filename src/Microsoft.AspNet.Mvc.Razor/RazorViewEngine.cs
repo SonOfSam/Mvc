@@ -6,9 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using Microsoft.AspNet.Mvc.Actions;
-using Microsoft.AspNet.Mvc.Rendering;
-using Microsoft.Framework.Internal;
+using Microsoft.AspNet.Mvc.Routing;
+using Microsoft.AspNet.Mvc.ViewEngines;
 using Microsoft.Framework.OptionsModel;
 
 namespace Microsoft.AspNet.Mvc.Razor
@@ -48,10 +47,11 @@ namespace Microsoft.AspNet.Mvc.Razor
         /// Initializes a new instance of the <see cref="RazorViewEngine" /> class.
         /// </summary>
         /// <param name="pageFactory">The page factory used for creating <see cref="IRazorPage"/> instances.</param>
-        public RazorViewEngine(IRazorPageFactory pageFactory,
-                               IRazorViewFactory viewFactory,
-                               IOptions<RazorViewEngineOptions> optionsAccessor,
-                               IViewLocationCache viewLocationCache)
+        public RazorViewEngine(
+            IRazorPageFactory pageFactory,
+            IRazorViewFactory viewFactory,
+            IOptions<RazorViewEngineOptions> optionsAccessor,
+            IViewLocationCache viewLocationCache)
         {
             _pageFactory = pageFactory;
             _viewFactory = viewFactory;
@@ -98,9 +98,15 @@ namespace Microsoft.AspNet.Mvc.Razor
         }
 
         /// <inheritdoc />
-        public ViewEngineResult FindView([NotNull] ActionContext context,
-                                         string viewName)
+        public ViewEngineResult FindView(
+            ActionContext context,
+            string viewName)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             if (string.IsNullOrEmpty(viewName))
             {
                 throw new ArgumentException(Resources.ArgumentCannotBeNullOrEmpty, nameof(viewName));
@@ -111,9 +117,15 @@ namespace Microsoft.AspNet.Mvc.Razor
         }
 
         /// <inheritdoc />
-        public ViewEngineResult FindPartialView([NotNull] ActionContext context,
-                                                string partialViewName)
+        public ViewEngineResult FindPartialView(
+            ActionContext context,
+            string partialViewName)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             if (string.IsNullOrEmpty(partialViewName))
             {
                 throw new ArgumentException(Resources.ArgumentCannotBeNullOrEmpty, nameof(partialViewName));
@@ -124,9 +136,15 @@ namespace Microsoft.AspNet.Mvc.Razor
         }
 
         /// <inheritdoc />
-        public RazorPageResult FindPage([NotNull] ActionContext context,
-                                        string pageName)
+        public RazorPageResult FindPage(
+            ActionContext context,
+            string pageName)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             if (string.IsNullOrEmpty(pageName))
             {
                 throw new ArgumentException(Resources.ArgumentCannotBeNullOrEmpty, nameof(pageName));
@@ -144,12 +162,24 @@ namespace Microsoft.AspNet.Mvc.Razor
         /// <remarks>
         /// The casing of a route value in <see cref="ActionContext.RouteData"/> is determined by the client.
         /// This making constructing paths for view locations in a case sensitive file system unreliable. Using the
-        /// <see cref="ActionDescriptor.RouteValueDefaults"/> for attribute routes and
-        /// <see cref="ActionDescriptor.RouteConstraints"/> for traditional routes to get route values produces
-        /// consistently cased results.
+        /// <see cref="Abstractions.ActionDescriptor.RouteValueDefaults"/> for attribute routes and
+        /// <see cref="Abstractions.ActionDescriptor.RouteConstraints"/> for traditional routes to get route values
+        /// produces consistently cased results.
         /// </remarks>
-        internal static string GetNormalizedRouteValue(ActionContext context, string key)
+        public static string GetNormalizedRouteValue(
+            ActionContext context,
+            string key)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             object routeValue;
             if (!context.RouteData.Values.TryGetValue(key, out routeValue))
             {
@@ -191,9 +221,10 @@ namespace Microsoft.AspNet.Mvc.Razor
             return stringRouteValue;
         }
 
-        private RazorPageResult GetRazorPageResult(ActionContext context,
-                                                   string pageName,
-                                                   bool isPartial)
+        private RazorPageResult GetRazorPageResult(
+            ActionContext context,
+            string pageName,
+            bool isPartial)
         {
             if (IsApplicationRelativePath(pageName))
             {
@@ -303,9 +334,10 @@ namespace Microsoft.AspNet.Mvc.Razor
             return new RazorPageResult(pageName, searchedLocations);
         }
 
-        private ViewEngineResult CreateViewEngineResult(RazorPageResult result,
-                                                        IRazorViewFactory razorViewFactory,
-                                                        bool isPartial)
+        private ViewEngineResult CreateViewEngineResult(
+            RazorPageResult result,
+            IRazorViewFactory razorViewFactory,
+            bool isPartial)
         {
             if (result.SearchedLocations != null)
             {

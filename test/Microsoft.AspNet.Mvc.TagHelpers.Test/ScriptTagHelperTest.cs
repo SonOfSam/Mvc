@@ -10,17 +10,18 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.FileProviders;
 using Microsoft.AspNet.Hosting;
 using Microsoft.AspNet.Http.Internal;
-using Microsoft.AspNet.Mvc.Actions;
+using Microsoft.AspNet.Mvc.Abstractions;
 using Microsoft.AspNet.Mvc.ModelBinding;
 using Microsoft.AspNet.Mvc.Rendering;
 using Microsoft.AspNet.Mvc.TagHelpers.Internal;
+using Microsoft.AspNet.Mvc.ViewEngines;
+using Microsoft.AspNet.Mvc.ViewFeatures;
 using Microsoft.AspNet.Razor.Runtime.TagHelpers;
 using Microsoft.AspNet.Routing;
-using Microsoft.AspNet.Testing.xunit;
 using Microsoft.Dnx.Runtime;
-using Microsoft.Framework.Caching;
 using Microsoft.Framework.Caching.Memory;
 using Microsoft.Framework.Logging;
+using Microsoft.Framework.Primitives;
 using Microsoft.Framework.WebEncoders.Testing;
 using Moq;
 using Xunit;
@@ -962,6 +963,8 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
                 .Returns(emptyDirectoryContents.Object);
             mockFileProvider.Setup(fp => fp.GetFileInfo(It.IsAny<string>()))
                 .Returns(mockFile.Object);
+            mockFileProvider.Setup(fp => fp.Watch(It.IsAny<string>()))
+                .Returns(new TestFileChangeToken());
             var hostingEnvironment = new Mock<IHostingEnvironment>();
             hostingEnvironment.Setup(h => h.WebRootFileProvider).Returns(mockFileProvider.Object);
 
@@ -983,7 +986,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
                 .Returns(result != null);
 
             var cacheEntryOptions = new MemoryCacheEntryOptions();
-            cacheEntryOptions.AddExpirationTrigger(new Mock<IExpirationTrigger>().Object);
+            cacheEntryOptions.AddExpirationToken(Mock.Of<IChangeToken>());
             cache
                 .Setup(
                     c => c.Set(

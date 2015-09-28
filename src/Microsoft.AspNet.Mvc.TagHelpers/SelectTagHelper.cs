@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.AspNet.Mvc.ModelBinding;
 using Microsoft.AspNet.Mvc.Rendering;
+using Microsoft.AspNet.Mvc.ViewFeatures;
 using Microsoft.AspNet.Razor.Runtime.TagHelpers;
 
 namespace Microsoft.AspNet.Mvc.TagHelpers
@@ -15,7 +16,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
     /// <summary>
     /// <see cref="ITagHelper"/> implementation targeting &lt;select&gt; elements with an <c>asp-for</c> attribute.
     /// </summary>
-    [TargetElement("select", Attributes = ForAttributeName)]
+    [HtmlTargetElement("select", Attributes = ForAttributeName)]
     public class SelectTagHelper : TagHelper
     {
         private const string ForAttributeName = "asp-for";
@@ -45,7 +46,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
         {
             get
             {
-                return DefaultOrder.DefaultFrameworkSortOrder;
+                return -1000;
             }
         }
 
@@ -89,7 +90,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
 
             // Base allowMultiple on the instance or declared type of the expression to avoid a
             // "SelectExpressionNotEnumerable" InvalidOperationException during generation.
-            // Metadata.IsCollectionType() is similar but does not take runtime type into account.
+            // Metadata.IsEnumerableType is similar but does not take runtime type into account.
             var realModelType = For.ModelExplorer.ModelType;
             var allowMultiple = typeof(string) != realModelType &&
                 typeof(IEnumerable).GetTypeInfo().IsAssignableFrom(realModelType.GetTypeInfo());

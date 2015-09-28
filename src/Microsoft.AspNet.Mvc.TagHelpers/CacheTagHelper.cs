@@ -8,6 +8,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Http;
+using Microsoft.AspNet.Mvc.Rendering;
+using Microsoft.AspNet.Mvc.ViewFeatures;
 using Microsoft.AspNet.Razor.Runtime.TagHelpers;
 using Microsoft.Framework.Caching.Memory;
 
@@ -50,7 +52,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
         {
             get
             {
-                return DefaultOrder.DefaultFrameworkSortOrder;
+                return -1000;
             }
         }
 
@@ -142,7 +144,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
                 var key = GenerateKey(context);
                 if (!MemoryCache.TryGetValue(key, out result))
                 {
-                    // Create an entry link scope and flow it so that any triggers related to the cache entries
+                    // Create an entry link scope and flow it so that any tokens related to the cache entries
                     // created within this scope get copied to this scope.
                     using (var link = MemoryCache.CreateLinkingScope())
                     {
@@ -235,10 +237,11 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
             return options;
         }
 
-        private static void AddStringCollectionKey(StringBuilder builder,
-                                                     string keyName,
-                                                     string value,
-                                                     IReadableStringCollection sourceCollection)
+        private static void AddStringCollectionKey(
+            StringBuilder builder,
+            string keyName,
+            string value,
+            IReadableStringCollection sourceCollection)
         {
             if (!string.IsNullOrEmpty(value))
             {

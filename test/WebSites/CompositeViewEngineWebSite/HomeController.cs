@@ -1,20 +1,20 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using Microsoft.AspNet.Mvc.ActionResults;
+using Microsoft.AspNet.Mvc;
 
 namespace CompositeViewEngineWebSite
 {
-    public class HomeController
+    public class HomeController : Controller
     {
         public ViewResult Index()
         {
-            return new ViewResult();
+            return View();
         }
 
         public ViewResult TestView()
         {
-            return new ViewResult { ViewName = "test-view" };
+            return View("test-view");
         }
     }
 }

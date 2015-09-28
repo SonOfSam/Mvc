@@ -5,8 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNet.Http;
-using Microsoft.AspNet.Mvc.Actions;
+using Microsoft.AspNet.Mvc.Abstractions;
 using Microsoft.AspNet.Mvc.Core;
+using Microsoft.AspNet.Mvc.Infrastructure;
 using Microsoft.AspNet.Routing;
 using Microsoft.Framework.DependencyInjection;
 using Microsoft.Framework.Internal;
@@ -17,11 +18,12 @@ namespace Microsoft.AspNet.Mvc.Routing
     {
         private RouteValuesCollection _cachedValuesCollection;
 
-        public bool Match([NotNull] HttpContext httpContext,
-                          [NotNull] IRouter route,
-                          [NotNull] string routeKey,
-                          [NotNull] IDictionary<string, object> values,
-                          RouteDirection routeDirection)
+        public bool Match(
+            [NotNull] HttpContext httpContext,
+            [NotNull] IRouter route,
+            [NotNull] string routeKey,
+            [NotNull] IDictionary<string, object> values,
+            RouteDirection routeDirection)
         {
             object value;
             if (values.TryGetValue(routeKey, out value))

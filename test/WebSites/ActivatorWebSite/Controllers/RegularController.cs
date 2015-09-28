@@ -4,7 +4,6 @@
 using System.Threading.Tasks;
 using Microsoft.AspNet.Http;
 using Microsoft.AspNet.Mvc;
-using Microsoft.AspNet.Mvc.ActionResults;
 
 namespace ActivatorWebSite
 {
@@ -15,7 +14,7 @@ namespace ActivatorWebSite
             // This verifies that ModelState and Context are activated.
             if (ModelState.IsValid)
             {
-                await Context.Response.WriteAsync("Hello world");
+                await HttpContext.Response.WriteAsync("Hello world");
             }
 
             return new EmptyResult();

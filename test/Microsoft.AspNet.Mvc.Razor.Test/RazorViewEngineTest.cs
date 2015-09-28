@@ -4,9 +4,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNet.Http.Internal;
-using Microsoft.AspNet.Mvc.Actions;
+using Microsoft.AspNet.Mvc.Abstractions;
 using Microsoft.AspNet.Mvc.Rendering;
 using Microsoft.AspNet.Mvc.Routing;
+using Microsoft.AspNet.Mvc.ViewEngines;
 using Microsoft.AspNet.Routing;
 using Microsoft.AspNet.Testing;
 using Microsoft.Framework.OptionsModel;
@@ -296,14 +297,18 @@ namespace Microsoft.AspNet.Mvc.Razor.Test
             var pageFactory = new Mock<IRazorPageFactory>();
             var viewFactory = new Mock<IRazorViewFactory>();
             var page = Mock.Of<IRazorPage>();
-            pageFactory.Setup(p => p.CreateInstance("fake-path1/bar/test-view.rzr"))
-                       .Returns(Mock.Of<IRazorPage>())
-                       .Verifiable();
-            var viewEngine = new OverloadedLocationViewEngine(pageFactory.Object,
-                                                              viewFactory.Object,
-                                                              GetOptionsAccessor(),
-                                                              GetViewLocationCache());
+            pageFactory
+                .Setup(p => p.CreateInstance("fake-path1/bar/test-view.rzr"))
+                .Returns(page)
+                .Verifiable();
+            var viewEngine = new OverloadedLocationViewEngine(
+                pageFactory.Object,
+                viewFactory.Object,
+                GetOptionsAccessor(),
+                GetViewLocationCache());
             var context = GetActionContext(_controllerTestContext);
+            viewFactory.Setup(v => v.GetView(viewEngine, page, false))
+                .Returns(Mock.Of<IView>());
 
             // Act
             var result = viewEngine.FindView(context, "test-view");
@@ -319,14 +324,18 @@ namespace Microsoft.AspNet.Mvc.Razor.Test
             var pageFactory = new Mock<IRazorPageFactory>();
             var viewFactory = new Mock<IRazorViewFactory>();
             var page = Mock.Of<IRazorPage>();
-            pageFactory.Setup(p => p.CreateInstance("fake-area-path/foo/bar/test-view2.rzr"))
-                       .Returns(Mock.Of<IRazorPage>())
-                       .Verifiable();
-            var viewEngine = new OverloadedLocationViewEngine(pageFactory.Object,
-                                                              viewFactory.Object,
-                                                              GetOptionsAccessor(),
-                                                              GetViewLocationCache());
+            pageFactory
+                .Setup(p => p.CreateInstance("fake-area-path/foo/bar/test-view2.rzr"))
+                .Returns(page)
+                .Verifiable();
+            var viewEngine = new OverloadedLocationViewEngine(
+                pageFactory.Object,
+                viewFactory.Object,
+                GetOptionsAccessor(),
+                GetViewLocationCache());
             var context = GetActionContext(_areaTestContext);
+            viewFactory.Setup(v => v.GetView(viewEngine, page, false))
+                .Returns(Mock.Of<IView>());
 
             // Act
             var result = viewEngine.FindView(context, "test-view2");
@@ -337,8 +346,9 @@ namespace Microsoft.AspNet.Mvc.Razor.Test
 
         [Theory]
         [MemberData(nameof(ViewLocationExpanderTestData))]
-        public void FindView_UsesViewLocationExpandersToLocateViews(IDictionary<string, object> routeValues,
-                                                                    IEnumerable<string> expectedSeeds)
+        public void FindView_UsesViewLocationExpandersToLocateViews(
+            IDictionary<string, object> routeValues,
+            IEnumerable<string> expectedSeeds)
         {
             // Arrange
             var pageFactory = new Mock<IRazorPageFactory>();
@@ -588,8 +598,9 @@ namespace Microsoft.AspNet.Mvc.Razor.Test
 
         [Theory]
         [MemberData(nameof(ViewLocationExpanderTestData))]
-        public void FindPage_UsesViewLocationExpander_ToExpandPaths(IDictionary<string, object> routeValues,
-                                                                    IEnumerable<string> expectedSeeds)
+        public void FindPage_UsesViewLocationExpander_ToExpandPaths(
+            IDictionary<string, object> routeValues,
+            IEnumerable<string> expectedSeeds)
         {
             // Arrange
             var page = Mock.Of<IRazorPage>();
@@ -1081,10 +1092,11 @@ namespace Microsoft.AspNet.Mvc.Razor.Test
             }
         }
 
-        private RazorViewEngine CreateViewEngine(IRazorPageFactory pageFactory = null,
-                                                 IRazorViewFactory viewFactory = null,
-                                                 IEnumerable<IViewLocationExpander> expanders = null,
-                                                 IViewLocationCache cache = null)
+        private RazorViewEngine CreateViewEngine(
+            IRazorPageFactory pageFactory = null,
+            IRazorViewFactory viewFactory = null,
+            IEnumerable<IViewLocationExpander> expanders = null,
+            IViewLocationCache cache = null)
         {
             pageFactory = pageFactory ?? Mock.Of<IRazorPageFactory>();
             viewFactory = viewFactory ?? Mock.Of<IRazorViewFactory>();
@@ -1175,10 +1187,11 @@ namespace Microsoft.AspNet.Mvc.Razor.Test
 
         private class OverloadedLocationViewEngine : RazorViewEngine
         {
-            public OverloadedLocationViewEngine(IRazorPageFactory pageFactory,
-                                                IRazorViewFactory viewFactory,
-                                                IOptions<RazorViewEngineOptions> optionsAccessor,
-                                                IViewLocationCache cache)
+            public OverloadedLocationViewEngine(
+                IRazorPageFactory pageFactory,
+                IRazorViewFactory viewFactory,
+                IOptions<RazorViewEngineOptions> optionsAccessor,
+                IViewLocationCache cache)
                 : base(pageFactory, viewFactory, optionsAccessor, cache)
             {
             }

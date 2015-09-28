@@ -3,7 +3,10 @@
 
 using Microsoft.AspNet.Hosting;
 using Microsoft.AspNet.Mvc.Razor.TagHelpers;
+using Microsoft.AspNet.Mvc.Rendering;
+using Microsoft.AspNet.Mvc.Routing;
 using Microsoft.AspNet.Mvc.TagHelpers.Internal;
+using Microsoft.AspNet.Mvc.ViewFeatures;
 using Microsoft.AspNet.Razor.Runtime.TagHelpers;
 using Microsoft.Framework.Caching.Memory;
 using Microsoft.Framework.WebEncoders;
@@ -16,7 +19,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
     /// <remarks>
     /// The tag helper won't process for cases with just the 'src' attribute.
     /// </remarks>
-    [TargetElement(
+    [HtmlTargetElement(
         "img",
         Attributes = AppendVersionAttributeName + "," + SrcAttributeName,
         TagStructure = TagStructure.WithoutEndTag)]
@@ -51,7 +54,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
         {
             get
             {
-                return DefaultOrder.DefaultFrameworkSortOrder;
+                return -1000;
             }
         }
 

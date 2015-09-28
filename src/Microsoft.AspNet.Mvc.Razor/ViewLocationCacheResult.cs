@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -21,10 +21,15 @@ namespace Microsoft.AspNet.Mvc.Razor
         /// <param name="searchedLocations">Locations that were searched
         /// in addition to <paramref name="foundLocation"/>.</param>
         public ViewLocationCacheResult(
-            [NotNull] string foundLocation,
-            [NotNull] IEnumerable<string> searchedLocations)
-            : this (searchedLocations)
+            string foundLocation,
+            IEnumerable<string> searchedLocations)
+            : this(searchedLocations)
         {
+            if (foundLocation == null)
+            {
+                throw new ArgumentNullException(nameof(foundLocation));
+            }
+
             ViewLocation = foundLocation;
             SearchedLocations = searchedLocations;
             IsFoundResult = true;
@@ -35,8 +40,13 @@ namespace Microsoft.AspNet.Mvc.Razor
         /// failed view lookup.
         /// </summary>
         /// <param name="searchedLocations">Locations that were searched.</param>
-        public ViewLocationCacheResult([NotNull] IEnumerable<string> searchedLocations)
+        public ViewLocationCacheResult(IEnumerable<string> searchedLocations)
         {
+            if (searchedLocations == null)
+            {
+                throw new ArgumentNullException(nameof(searchedLocations));
+            }
+
             SearchedLocations = searchedLocations;
             ViewLocation = null;
             IsFoundResult = false;
@@ -99,9 +109,8 @@ namespace Microsoft.AspNet.Mvc.Razor
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            var hashCodeCombiner = HashCodeCombiner.Start()
-                .Add(IsFoundResult);
-
+            var hashCodeCombiner = HashCodeCombiner.Start();
+            hashCodeCombiner.Add(IsFoundResult);
 
             if (IsFoundResult)
             {

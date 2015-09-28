@@ -7,9 +7,8 @@ using System.Text;
 using Microsoft.AspNet.FileProviders;
 using Microsoft.AspNet.Hosting;
 using Microsoft.AspNet.Http;
-using Microsoft.AspNet.Testing.xunit;
-using Microsoft.Framework.Caching;
 using Microsoft.Framework.Caching.Memory;
+using Microsoft.Framework.Primitives;
 using Moq;
 using Xunit;
 
@@ -54,6 +53,8 @@ namespace Microsoft.AspNet.Mvc.TagHelpers.Internal
             var mockFileProvider = new Mock<IFileProvider>();
             mockFileProvider.Setup(fp => fp.GetFileInfo(It.IsAny<string>()))
                 .Returns(mockFile.Object);
+            mockFileProvider.Setup(fp => fp.Watch(It.IsAny<string>()))
+                .Returns(new TestFileChangeToken());
 
             var hostingEnvironment = new Mock<IHostingEnvironment>();
             hostingEnvironment.Setup(h => h.WebRootFileProvider).Returns(mockFileProvider.Object);
@@ -136,10 +137,10 @@ namespace Microsoft.AspNet.Mvc.TagHelpers.Internal
         public void SetsValueInCache(string filePath, string watchPath, string requestPathBase)
         {
             // Arrange
-            var trigger = new Mock<IExpirationTrigger>();
+            var changeToken = new Mock<IChangeToken>();
             var hostingEnvironment = GetMockHostingEnvironment(filePath, requestPathBase != null);
             Mock.Get(hostingEnvironment.WebRootFileProvider)
-                .Setup(f => f.Watch(watchPath)).Returns(trigger.Object);
+                .Setup(f => f.Watch(watchPath)).Returns(changeToken.Object);
 
             object cacheValue = null;
             var cache = new Mock<IMemoryCache>();
@@ -194,6 +195,9 @@ namespace Microsoft.AspNet.Mvc.TagHelpers.Internal
                 mockFileProvider.Setup(fp => fp.GetFileInfo(It.IsAny<string>()))
                     .Returns(fileDoesNotExist? nonExistingMockFile.Object : existingMockFile.Object);
             }
+
+            mockFileProvider.Setup(fp => fp.Watch(It.IsAny<string>()))
+                .Returns(new TestFileChangeToken());
 
             var hostingEnvironment = new Mock<IHostingEnvironment>();
             hostingEnvironment.Setup(h => h.WebRootFileProvider).Returns(mockFileProvider.Object);

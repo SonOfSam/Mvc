@@ -4,10 +4,10 @@
 using System;
 using System.Globalization;
 using System.Threading.Tasks;
-using Microsoft.AspNet.Mvc.Actions;
 using Microsoft.AspNet.Mvc.Rendering;
+using Microsoft.AspNet.Mvc.ViewEngines;
+using Microsoft.AspNet.Mvc.ViewFeatures;
 using Microsoft.Framework.DependencyInjection;
-using Microsoft.Framework.Internal;
 
 namespace Microsoft.AspNet.Mvc.ViewComponents
 {
@@ -48,8 +48,13 @@ namespace Microsoft.AspNet.Mvc.ViewComponents
         /// <remarks>
         /// This method synchronously calls and blocks on <see cref="ExecuteAsync(ViewComponentContext)"/>.
         /// </remarks>
-        public void Execute([NotNull] ViewComponentContext context)
+        public void Execute(ViewComponentContext context)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             var task = ExecuteAsync(context);
             task.GetAwaiter().GetResult();
         }
@@ -60,8 +65,13 @@ namespace Microsoft.AspNet.Mvc.ViewComponents
         /// </summary>
         /// <param name="context">The <see cref="ViewComponentContext"/> for the current component execution.</param>
         /// <returns>A <see cref="Task"/> which will complete when view rendering is completed.</returns>
-        public async Task ExecuteAsync([NotNull] ViewComponentContext context)
+        public async Task ExecuteAsync(ViewComponentContext context)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             var viewEngine = ViewEngine ?? ResolveViewEngine(context);
             var viewData = ViewData ?? context.ViewData;
             var isNullOrEmptyViewName = string.IsNullOrEmpty(ViewName);

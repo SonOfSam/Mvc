@@ -1,31 +1,48 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
 using Microsoft.AspNet.Mvc;
-using Microsoft.AspNet.Mvc.Actions;
+using Microsoft.AspNet.Mvc.Controllers;
 using Microsoft.AspNet.Mvc.Formatters;
 using Microsoft.AspNet.Mvc.Rendering;
 using Microsoft.AspNet.Mvc.ViewComponents;
+using Microsoft.AspNet.Mvc.ViewEngines;
+using Microsoft.AspNet.Mvc.ViewFeatures;
+using Microsoft.AspNet.Mvc.ViewFeatures.Internal;
 using Microsoft.Framework.DependencyInjection.Extensions;
-using Microsoft.Framework.Internal;
 using Microsoft.Framework.OptionsModel;
 
 namespace Microsoft.Framework.DependencyInjection
 {
     public static class MvcViewFeaturesMvcCoreBuilderExtensions
     {
-        public static IMvcCoreBuilder AddViews([NotNull] this IMvcCoreBuilder builder)
+        public static IMvcCoreBuilder AddViews(this IMvcCoreBuilder builder)
         {
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
             builder.AddDataAnnotations();
             AddViewServices(builder.Services);
             return builder;
         }
 
         public static IMvcCoreBuilder AddViews(
-            [NotNull] this IMvcCoreBuilder builder,
-            [NotNull] Action<MvcViewOptions> setupAction)
+            this IMvcCoreBuilder builder,
+            Action<MvcViewOptions> setupAction)
         {
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
+            if (setupAction == null)
+            {
+                throw new ArgumentNullException(nameof(setupAction));
+            }
+
             builder.AddDataAnnotations();
             AddViewServices(builder.Services);
 
@@ -38,9 +55,19 @@ namespace Microsoft.Framework.DependencyInjection
         }
 
         public static IMvcCoreBuilder ConfigureViews(
-            [NotNull] this IMvcCoreBuilder builder,
-            [NotNull] Action<MvcViewOptions> setupAction)
+            this IMvcCoreBuilder builder,
+            Action<MvcViewOptions> setupAction)
         {
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
+            if (setupAction == null)
+            {
+                throw new ArgumentNullException(nameof(setupAction));
+            }
+
             builder.Services.Configure(setupAction);
             return builder;
         }

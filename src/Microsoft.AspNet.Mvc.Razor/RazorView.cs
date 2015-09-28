@@ -4,11 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Http.Features;
 using Microsoft.AspNet.Mvc.Rendering;
+using Microsoft.AspNet.Mvc.ViewEngines;
 using Microsoft.AspNet.PageExecutionInstrumentation;
-using Microsoft.Framework.Internal;
+using Microsoft.Framework.WebEncoders;
 
 namespace Microsoft.AspNet.Mvc.Razor
 {
@@ -21,6 +23,7 @@ namespace Microsoft.AspNet.Mvc.Razor
         private readonly IRazorViewEngine _viewEngine;
         private readonly IRazorPageActivator _pageActivator;
         private readonly IViewStartProvider _viewStartProvider;
+        private readonly IHtmlEncoder _htmlEncoder;
         private IPageExecutionListenerFeature _pageExecutionFeature;
 
         /// <summary>
@@ -30,18 +33,22 @@ namespace Microsoft.AspNet.Mvc.Razor
         /// <param name="pageActivator">The <see cref="IRazorPageActivator"/> used to activate pages.</param>
         /// <param name="viewStartProvider">The <see cref="IViewStartProvider"/> used for discovery of _ViewStart
         /// <param name="razorPage">The <see cref="IRazorPage"/> instance to execute.</param>
+        /// <param name="htmlEncoder">The HTML encoder.</param>
         /// <param name="isPartial">Determines if the view is to be executed as a partial.</param>
         /// pages</param>
-        public RazorView(IRazorViewEngine viewEngine,
-                         IRazorPageActivator pageActivator,
-                         IViewStartProvider viewStartProvider,
-                         IRazorPage razorPage,
-                         bool isPartial)
+        public RazorView(
+            IRazorViewEngine viewEngine,
+            IRazorPageActivator pageActivator,
+            IViewStartProvider viewStartProvider,
+            IRazorPage razorPage,
+            IHtmlEncoder htmlEncoder,
+            bool isPartial)
         {
             _viewEngine = viewEngine;
             _pageActivator = pageActivator;
             _viewStartProvider = viewStartProvider;
             RazorPage = razorPage;
+            _htmlEncoder = htmlEncoder;
             IsPartial = isPartial;
         }
 
@@ -67,8 +74,13 @@ namespace Microsoft.AspNet.Mvc.Razor
         }
 
         /// <inheritdoc />
-        public virtual async Task RenderAsync([NotNull] ViewContext context)
+        public virtual async Task RenderAsync(ViewContext context)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             _pageExecutionFeature = context.HttpContext.Features.Get<IPageExecutionListenerFeature>();
 
             // Partials don't execute _ViewStart pages, but may execute Layout pages if the Layout property
@@ -77,11 +89,12 @@ namespace Microsoft.AspNet.Mvc.Razor
             await RenderLayoutAsync(context, bodyWriter);
         }
 
-        private async Task<IBufferedTextWriter> RenderPageAsync(IRazorPage page,
-                                                                ViewContext context,
-                                                                bool executeViewStart)
+        private async Task<IBufferedTextWriter> RenderPageAsync(
+            IRazorPage page,
+            ViewContext context,
+            bool executeViewStart)
         {
-            var razorTextWriter = new RazorTextWriter(context.Writer, context.Writer.Encoding);
+            var razorTextWriter = new RazorTextWriter(context.Writer, context.Writer.Encoding, _htmlEncoder);
             var writer = (TextWriter)razorTextWriter;
             var bufferedWriter = (IBufferedTextWriter)razorTextWriter;
 
@@ -164,7 +177,8 @@ namespace Microsoft.AspNet.Mvc.Razor
             RazorPage.Layout = layout;
         }
 
-        private async Task RenderLayoutAsync(ViewContext context,
+        private async Task RenderLayoutAsync(
+            ViewContext context,
                                              IBufferedTextWriter bodyWriter)
         {
             // A layout page can specify another layout page. We'll need to continue
@@ -185,6 +199,15 @@ namespace Microsoft.AspNet.Mvc.Razor
                 }
 
                 var layoutPage = GetLayoutPage(context, previousPage.Layout);
+
+                if (renderedLayouts.Count > 0 &&
+                    renderedLayouts.Any(l => string.Equals(l.Path, layoutPage.Path, StringComparison.Ordinal)))
+                {
+                    // If the layout has been previously rendered as part of this view, we're potentially in a layout
+                    // rendering cycle.
+                    throw new InvalidOperationException(
+                        Resources.FormatLayoutHasCircularReference(previousPage.Path, layoutPage.Path));
+                }
 
                 // Notify the previous page that any writes that are performed on it are part of sections being written
                 // in the layout.

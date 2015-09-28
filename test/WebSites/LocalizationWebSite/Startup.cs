@@ -3,7 +3,6 @@
 
 using Microsoft.AspNet.Builder;
 using Microsoft.Framework.DependencyInjection;
-using Microsoft.Framework.Localization;
 
 namespace LocalizationWebSite
 {
@@ -11,11 +10,10 @@ namespace LocalizationWebSite
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc().AddViewLocalization();
-
-            // Adding TestStringLocalizerFactory since ResourceStringLocalizerFactory uses ResourceManager. DNX does
-            // not support getting non-enu resources from ResourceManager yet.
-            services.AddSingleton<IStringLocalizerFactory, TestStringLocalizerFactory>();
+            services
+                .AddMvc()
+                .AddViewLocalization(options => options.ResourcesPath = "Resources")
+                .AddDataAnnotationsLocalization();
         }
 
         public void Configure(IApplicationBuilder app)
@@ -23,7 +21,7 @@ namespace LocalizationWebSite
             app.UseCultureReplacer();
 
             app.UseRequestLocalization();
-            
+
             app.UseMvcWithDefaultRoute();
         }
     }

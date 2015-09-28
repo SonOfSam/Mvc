@@ -5,8 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Microsoft.AspNet.Mvc.Actions;
-using Microsoft.Framework.Internal;
+using Microsoft.AspNet.Mvc.Infrastructure;
 using Xunit;
 
 namespace Microsoft.AspNet.Mvc.ViewComponents
@@ -187,7 +186,7 @@ namespace Microsoft.AspNet.Mvc.ViewComponents
 
             public Type[] AllowedTypes { get; private set; }
 
-            protected override bool IsViewComponentType([NotNull] TypeInfo typeInfo)
+            protected override bool IsViewComponentType(TypeInfo typeInfo)
             {
                 return AllowedTypes.Contains(typeInfo.AsType());
             }

@@ -7,8 +7,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using Microsoft.AspNet.Mvc.ModelBinding;
 using Microsoft.AspNet.Mvc.TestCommon;
+using Microsoft.AspNet.Mvc.ViewEngines;
+using Microsoft.AspNet.Mvc.ViewFeatures;
 using Microsoft.AspNet.Testing;
-using Microsoft.Framework.Internal;
 using Microsoft.Framework.WebEncoders;
 using Moq;
 using Xunit;
@@ -1561,7 +1562,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
 
         private class TestHtmlHelper : HtmlHelper
         {
-            public TestHtmlHelper([NotNull] IModelMetadataProvider metadataProvider)
+            public TestHtmlHelper(IModelMetadataProvider metadataProvider)
                 : base(
                       new Mock<IHtmlGenerator>(MockBehavior.Strict).Object,
                       new Mock<ICompositeViewEngine>(MockBehavior.Strict).Object,
@@ -1578,7 +1579,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
 
             public IEnumerable<SelectListItem> CopiedSelectListItems { get; private set; }
 
-            protected override IEnumerable<SelectListItem> GetEnumSelectList([NotNull] ModelMetadata metadata)
+            protected override IEnumerable<SelectListItem> GetEnumSelectList(ModelMetadata metadata)
             {
                 Metadata = metadata;
                 SelectListItems = base.GetEnumSelectList(metadata);

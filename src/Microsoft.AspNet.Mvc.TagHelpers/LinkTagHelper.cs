@@ -7,7 +7,10 @@ using System.Globalization;
 using System.Linq;
 using Microsoft.AspNet.Hosting;
 using Microsoft.AspNet.Mvc.Razor.TagHelpers;
+using Microsoft.AspNet.Mvc.Rendering;
+using Microsoft.AspNet.Mvc.Routing;
 using Microsoft.AspNet.Mvc.TagHelpers.Internal;
+using Microsoft.AspNet.Mvc.ViewFeatures;
 using Microsoft.AspNet.Razor.Runtime.TagHelpers;
 using Microsoft.Framework.Caching.Memory;
 using Microsoft.Framework.Logging;
@@ -21,15 +24,15 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
     /// <remarks>
     /// The tag helper won't process for cases with just the 'href' attribute.
     /// </remarks>
-    [TargetElement("link", Attributes = HrefIncludeAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [TargetElement("link", Attributes = HrefExcludeAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [TargetElement("link", Attributes = FallbackHrefAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [TargetElement("link", Attributes = FallbackHrefIncludeAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [TargetElement("link", Attributes = FallbackHrefExcludeAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [TargetElement("link", Attributes = FallbackTestClassAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [TargetElement("link", Attributes = FallbackTestPropertyAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [TargetElement("link", Attributes = FallbackTestValueAttributeName, TagStructure = TagStructure.WithoutEndTag)]
-    [TargetElement("link", Attributes = AppendVersionAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("link", Attributes = HrefIncludeAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("link", Attributes = HrefExcludeAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("link", Attributes = FallbackHrefAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("link", Attributes = FallbackHrefIncludeAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("link", Attributes = FallbackHrefExcludeAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("link", Attributes = FallbackTestClassAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("link", Attributes = FallbackTestPropertyAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("link", Attributes = FallbackTestValueAttributeName, TagStructure = TagStructure.WithoutEndTag)]
+    [HtmlTargetElement("link", Attributes = AppendVersionAttributeName, TagStructure = TagStructure.WithoutEndTag)]
     public class LinkTagHelper : UrlResolutionTagHelper
     {
         private static readonly string Namespace = typeof(LinkTagHelper).Namespace;
@@ -112,7 +115,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
         {
             get
             {
-                return DefaultOrder.DefaultFrameworkSortOrder;
+                return -1000;
             }
         }
 
@@ -265,7 +268,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
                 {
                     // Only HrefInclude is specified. Don't render the original tag.
                     output.TagName = null;
-                    output.Content.SetContent(string.Empty);
+                    output.Content.SetContent(HtmlString.Empty);
                 }
             }
 
@@ -323,26 +326,27 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
                     }
                 }
 
-                builder.Append(Environment.NewLine);
+                builder.Append(HtmlString.NewLine);
 
                 // Build the <meta /> tag that's used to test for the presence of the stylesheet
-                builder.AppendFormat(
-                    CultureInfo.InvariantCulture,
-                    "<meta name=\"x-stylesheet-fallback-test\" class=\"{0}\" />",
-                    HtmlEncoder.HtmlEncode(FallbackTestClass));
+                builder
+                    .AppendEncoded("<meta name=\"x-stylesheet-fallback-test\" class=\"")
+                    .Append(FallbackTestClass)
+                    .AppendEncoded("\" />");
 
                 // Build the <script /> tag that checks the effective style of <meta /> tag above and renders the extra
                 // <link /> tag to load the fallback stylesheet if the test CSS property value is found to be false,
                 // indicating that the primary stylesheet failed to load.
                 builder
-                    .Append("<script>")
-                    .AppendFormat(
-                        CultureInfo.InvariantCulture,
-                        JavaScriptResources.GetEmbeddedJavaScript(FallbackJavaScriptResourceName),
-                        JavaScriptEncoder.JavaScriptStringEncode(FallbackTestProperty),
-                        JavaScriptEncoder.JavaScriptStringEncode(FallbackTestValue),
-                        JavaScriptStringArrayEncoder.Encode(JavaScriptEncoder, fallbackHrefs))
-                    .Append("</script>");
+                    .AppendEncoded("<script>")
+                    .AppendEncoded(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            JavaScriptResources.GetEmbeddedJavaScript(FallbackJavaScriptResourceName),
+                            JavaScriptEncoder.JavaScriptStringEncode(FallbackTestProperty),
+                            JavaScriptEncoder.JavaScriptStringEncode(FallbackTestValue),
+                            JavaScriptStringArrayEncoder.Encode(JavaScriptEncoder, fallbackHrefs)))
+                    .AppendEncoded("</script>");
             }
         }
 
@@ -370,7 +374,7 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
 
         private void BuildLinkTag(TagHelperAttributeList attributes, TagHelperContent builder)
         {
-            builder.Append("<link ");
+            builder.AppendEncoded("<link ");
 
             foreach (var attribute in attributes)
             {
@@ -389,13 +393,13 @@ namespace Microsoft.AspNet.Mvc.TagHelpers
                 }
 
                 builder
-                    .Append(attribute.Name)
-                    .Append("=\"")
+                    .AppendEncoded(attribute.Name)
+                    .AppendEncoded("=\"")
                     .Append(HtmlEncoder, ViewContext.Writer.Encoding, attributeValue)
-                    .Append("\" ");
+                    .AppendEncoded("\" ");
             }
 
-            builder.Append("/>");
+            builder.AppendEncoded("/>");
         }
 
         private enum Mode
